@@ -1,0 +1,16 @@
+# Simulation Configuration
+# Real-Time Data Stream Simulator settings
+
+# Event generation interval (seconds)
+event_interval_seconds: 300  # 5 minutes
+
+# Number of events per cycle
+enrollments_per_cycle_base: 5
+sessions_per_cycle_base: 10
+tutor_update_probability: 0.10  # 10% of tutors per cycle
+
+# Fast-forward settings
+fast_forward_batch_size: 1000
+
+# Simulation speed
+default_speed_multiplier: 1

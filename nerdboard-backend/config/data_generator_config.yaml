@@ -1,0 +1,22 @@
+# Historical Data Generator Configuration
+# These values can be overridden via CLI arguments
+
+start_date: "2024-01-01"
+end_date: "2024-12-31"
+num_tutors: 150
+num_students: 500
+
+subjects_list:
+  - Math
+  - Science
+  - English
+  - History
+  - Computer Science
+  - Languages
+  - Arts
+  - Music
+  - Economics
+  - Biology
+  - SAT Prep
+  - Physics
+  - Chemistry
