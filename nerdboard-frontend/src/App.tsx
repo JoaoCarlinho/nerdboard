@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, useParams } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -12,7 +12,7 @@ const queryClient = new QueryClient({
   },
 })
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const API_TOKEN = import.meta.env.VITE_API_TOKEN || 'demo_token_12345'
 
 // API client
