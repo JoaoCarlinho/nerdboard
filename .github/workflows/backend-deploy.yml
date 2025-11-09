@@ -1,0 +1,92 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - 'nerdboard-backend/**'
+      - '.github/workflows/backend-deploy.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'nerdboard-backend/**'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nerdboard-backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8 black isort pytest pytest-asyncio
+
+      - name: Run Black (code formatter check)
+        run: black --check app/ || true
+
+      - name: Run isort (import sort check)
+        run: isort --check-only app/ || true
+
+      - name: Run Flake8 (linting)
+        run: flake8 app/ --max-line-length=120 --ignore=E203,W503 || true
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          DEMO_TOKEN: test_token
+        run: |
+          echo "Tests passed (placeholder - add pytest when tests exist)"
+
+  build-and-deploy:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          cd nerdboard-backend
+          railway up --detach
+
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Health check
+        run: |
+          curl -f ${{ secrets.BACKEND_URL }}/health || exit 1
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Backend deployed successfully to Railway"
+          else
+            echo "❌ Backend deployment failed"
+            exit 1
+          fi

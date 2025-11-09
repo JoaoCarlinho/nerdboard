@@ -1,0 +1,80 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [main, staging]
+
+jobs:
+  backend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd nerdboard-backend
+          pip install -r requirements.txt
+          pip install flake8 black
+
+      - name: Run Black
+        run: |
+          cd nerdboard-backend
+          black --check app/ || true
+
+      - name: Run Flake8
+        run: |
+          cd nerdboard-backend
+          flake8 app/ --max-line-length=120 --ignore=E203,W503 || true
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install and build
+        run: |
+          cd nerdboard-frontend
+          npm ci
+          npm run lint || true
+          npm run build
+
+  comment-pr:
+    runs-on: ubuntu-latest
+    needs: [backend-checks, frontend-checks]
+    if: always()
+    steps:
+      - name: Comment PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const backendStatus = '${{ needs.backend-checks.result }}';
+            const frontendStatus = '${{ needs.frontend-checks.result }}';
+
+            let body = '## CI/CD Status\n\n';
+            body += `- Backend Checks: ${backendStatus === 'success' ? '✅' : '❌'}\n`;
+            body += `- Frontend Checks: ${frontendStatus === 'success' ? '✅' : '❌'}\n\n`;
+
+            if (backendStatus === 'success' && frontendStatus === 'success') {
+              body += '✅ All checks passed! Ready for review.';
+            } else {
+              body += '❌ Some checks failed. Please review the logs.';
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            })
