@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:18
+    container_name: nerdboard-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: nerdboard
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nerdboard-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: nerdboard-redis
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - nerdboard-network
+
+  backend:
+    build:
+      context: ./nerdboard-backend
+      dockerfile: Dockerfile
+    container_name: nerdboard-backend
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:dev_password@postgres:5432/nerdboard
+      REDIS_URL: redis://redis:6379/0
+      DEMO_TOKEN: nerdboard_demo_2025
+      ENV: development
+    volumes:
+      - ./nerdboard-backend/app:/app/app
+      - ./nerdboard-backend/models:/app/models
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - nerdboard-network
+
+  frontend:
+    build:
+      context: ./nerdboard-frontend
+      dockerfile: Dockerfile.dev
+    container_name: nerdboard-frontend
+    ports:
+      - "5174:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8001/api/v1
+      VITE_ENV: development
+    volumes:
+      - ./nerdboard-frontend/src:/app/src
+      - ./nerdboard-frontend/public:/app/public
+    command: npm run dev -- --host 0.0.0.0
+    networks:
+      - nerdboard-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  nerdboard-network:
+    driver: bridge
