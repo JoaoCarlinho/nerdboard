@@ -291,12 +291,12 @@ async def get_subject_detail(
             # Get utilization history (last 4 weeks)
             query_history = text("""
                 SELECT
-                    date_trunc('week', snapshot_time) as week,
+                    date_trunc('week', date) as week,
                     AVG(utilization_rate) * 100 as avg_utilization
                 FROM capacity_snapshots
                 WHERE subject = :subject
-                AND snapshot_time >= NOW() - INTERVAL '4 weeks'
-                GROUP BY date_trunc('week', snapshot_time)
+                AND date >= NOW() - INTERVAL '4 weeks'
+                GROUP BY date_trunc('week', date)
                 ORDER BY week DESC
             """)
             result_hist = await session.execute(query_history, {"subject": subject})
