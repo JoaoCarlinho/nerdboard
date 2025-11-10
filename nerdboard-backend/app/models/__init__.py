@@ -6,6 +6,7 @@ from app.models.health_metric import HealthMetric
 from app.models.capacity_snapshot import CapacitySnapshot
 from app.models.data_quality_log import DataQualityLog
 from app.models.simulation_state import SimulationState
+from app.models.prediction import Prediction
 
 __all__ = [
     "Enrollment",
@@ -15,4 +16,5 @@ __all__ = [
     "CapacitySnapshot",
     "DataQualityLog",
     "SimulationState",
+    "Prediction",
 ]
