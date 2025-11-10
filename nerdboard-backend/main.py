@@ -162,6 +162,29 @@ async def root():
     }
 
 
+# Admin endpoint to load demo data
+@app.post("/admin/load-demo", tags=["Admin"])
+async def load_demo_data():
+    """Load demo data into the database (physics_shortage scenario)"""
+    try:
+        import subprocess
+        logger.info("Loading demo data...")
+        result = subprocess.run(
+            ["python3", "-m", "app.scripts.load_demo", "--scenario", "physics_shortage"],
+            capture_output=True,
+            text=True,
+            timeout=120
+        )
+        if result.returncode == 0:
+            return {"status": "success", "message": "Demo data loaded successfully"}
+        else:
+            logger.error(f"Failed to load demo data: {result.stderr}")
+            return {"status": "error", "message": result.stderr}
+    except Exception as e:
+        logger.error(f"Error loading demo data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
 
